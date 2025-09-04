@@ -1,87 +1,165 @@
-import leadsData from "@/services/mockData/leads.json";
-import salesRepsData from "@/services/mockData/salesReps.json";
-import { getFreshLeadsOnly } from "./leadsService";
-
 // Utility function to clean website URLs by removing trailing slash
 const cleanWebsiteUrl = (url) => {
   if (!url) return url;
   return url.endsWith('/') ? url.slice(0, -1) : url;
 };
 
-// Get website URL activity with filtering options
-export const getWebsiteUrlActivity = async (filters = {}) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  let filteredData = [...leadsData];
-  
-  // Filter by date range
-  if (filters.startDate || filters.endDate) {
-    filteredData = filteredData.filter(lead => {
-      const leadDate = new Date(lead.createdAt);
-      const start = filters.startDate ? new Date(filters.startDate) : new Date('1900-01-01');
-      const end = filters.endDate ? new Date(filters.endDate) : new Date('2100-12-31');
-      
-      // Set time to compare only dates
-      leadDate.setHours(0, 0, 0, 0);
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
-      
-      return leadDate >= start && leadDate <= end;
-    });
-  }
-  
-  // Filter by specific date (for today, yesterday, etc.)
-  if (filters.date) {
-    const targetDate = new Date(filters.date);
-    filteredData = filteredData.filter(lead => {
-      const leadDate = new Date(lead.createdAt);
-      return leadDate.toDateString() === targetDate.toDateString();
-    });
-  }
-  
-  // Filter by user/sales rep
-  if (filters.addedBy) {
-    filteredData = filteredData.filter(lead => lead.addedBy === filters.addedBy);
-  }
-  
-  // Filter by search term
-  if (filters.searchTerm) {
-    const term = filters.searchTerm.toLowerCase();
-    filteredData = filteredData.filter(lead => 
-      lead.websiteUrl.toLowerCase().includes(term) ||
-      lead.category.toLowerCase().includes(term) ||
-      lead.addedByName.toLowerCase().includes(term)
-    );
-}
-  
-  // Clean website URLs in the filtered data
-  const cleanedData = filteredData.map(lead => ({
-    ...lead,
-    websiteUrl: cleanWebsiteUrl(lead.websiteUrl)
-  }));
-  
-  return {
-    data: cleanedData,
-    summary: {
-      totalUrls: filteredData.length,
-      totalArr: filteredData.reduce((sum, lead) => sum + lead.arr, 0),
-      byStatus: getStatusSummary(filteredData),
-      byCategory: getCategorySummary(filteredData)
-    }
-  };
+// Helper functions
+const getStatusSummary = (data) => {
+  const summary = {};
+  data.forEach(lead => {
+    summary[lead.status_c] = (summary[lead.status_c] || 0) + 1;
+  });
+  return summary;
 };
 
-// Get activity for a specific date
+const getCategorySummary = (data) => {
+  const summary = {};
+  data.forEach(lead => {
+    summary[lead.category_c] = (summary[lead.category_c] || 0) + 1;
+  });
+  return summary;
+};
+
+export const getWebsiteUrlActivity = async (filters = {}) => {
+  try {
+    const { ApperClient } = window.ApperSDK;
+    const apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+
+    const params = {
+      fields: [
+        { field: { Name: "Name" } },
+        { field: { Name: "product_name_c" } },
+        { field: { Name: "website_url_c" } },
+        { field: { Name: "category_c" } },
+        { field: { Name: "status_c" } },
+        { field: { Name: "arr_c" } },
+        { field: { Name: "funding_type_c" } },
+        { field: { Name: "team_size_c" } },
+        { field: { Name: "created_at_c" } },
+        { field: { Name: "added_by_c" } }
+      ],
+      where: []
+    };
+
+    // Add date filtering
+    if (filters.startDate && filters.endDate) {
+      params.where.push({
+        FieldName: "created_at_c",
+        Operator: "GreaterThanOrEqualTo",
+        Values: [filters.startDate]
+      });
+      params.where.push({
+        FieldName: "created_at_c",
+        Operator: "LessThanOrEqualTo", 
+        Values: [filters.endDate]
+      });
+    } else if (filters.date) {
+      params.where.push({
+        FieldName: "created_at_c",
+        Operator: "ExactMatch",
+        SubOperator: "Day",
+        Values: [new Date(filters.date).toLocaleDateString('en-GB', { 
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        })]
+      });
+    }
+
+    // Add user filtering
+    if (filters.addedBy) {
+      params.where.push({
+        FieldName: "added_by_c",
+        Operator: "EqualTo",
+        Values: [filters.addedBy]
+      });
+    }
+
+    // Add search filtering
+    if (filters.searchTerm) {
+      params.whereGroups = [
+        {
+          operator: "OR",
+          subGroups: [
+            {
+              conditions: [
+                {
+                  fieldName: "website_url_c",
+                  operator: "Contains",
+                  values: [filters.searchTerm]
+                }
+              ]
+            },
+            {
+              conditions: [
+                {
+                  fieldName: "category_c", 
+                  operator: "Contains",
+                  values: [filters.searchTerm]
+                }
+              ]
+            }
+          ]
+        }
+      ];
+    }
+
+    const response = await apperClient.fetchRecords('lead_c', params);
+
+    if (!response.success) {
+      console.error(response.message);
+      return {
+        data: [],
+        summary: { totalUrls: 0, totalArr: 0, byStatus: {}, byCategory: {} }
+      };
+    }
+
+    const data = response.data || [];
+    const cleanedData = data.map(lead => ({
+      Id: lead.Id,
+      Name: lead.Name,
+      productName: lead.product_name_c || '',
+      websiteUrl: cleanWebsiteUrl(lead.website_url_c || ''),
+      category: lead.category_c || '',
+      status: lead.status_c || '',
+      arr: lead.arr_c || 0,
+      fundingType: lead.funding_type_c || '',
+      teamSize: lead.team_size_c || '',
+      createdAt: lead.created_at_c || new Date().toISOString(),
+      addedBy: lead.added_by_c?.Id || null,
+      addedByName: lead.added_by_c?.Name || 'Unknown'
+    }));
+
+    return {
+      data: cleanedData,
+      summary: {
+        totalUrls: data.length,
+        totalArr: data.reduce((sum, lead) => sum + (lead.arr_c || 0), 0),
+        byStatus: getStatusSummary(data),
+        byCategory: getCategorySummary(data)
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching website URL activity:", error?.response?.data?.message || error.message);
+    return {
+      data: [],
+      summary: { totalUrls: 0, totalArr: 0, byStatus: {}, byCategory: {} }
+    };
+  }
+};
+
 export const getActivityByDate = async (date) => {
   return await getWebsiteUrlActivity({ date });
 };
 
-// Get activity for a specific user
 export const getActivityByUser = async (userId) => {
   return await getWebsiteUrlActivity({ addedBy: userId });
 };
 
-// Get quick date filters (today, yesterday, this week, etc.)
 export const getQuickDateFilters = () => {
   const today = new Date();
   const yesterday = new Date(today);
@@ -109,141 +187,105 @@ export const getQuickDateFilters = () => {
   };
 };
 
-// Get all sales reps for filtering
 export const getSalesRepsForFilter = async () => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
-  return [...salesRepsData];
-};
-
-// Helper functions
-const getStatusSummary = (data) => {
-  const summary = {};
-  data.forEach(lead => {
-    summary[lead.status] = (summary[lead.status] || 0) + 1;
-  });
-  return summary;
-};
-
-const getCategorySummary = (data) => {
-  const summary = {};
-  data.forEach(lead => {
-    summary[lead.category] = (summary[lead.category] || 0) + 1;
-  });
-  return summary;
-};
-
-// Get daily website URLs for a specific sales rep - only fresh leads
-export const getDailyWebsiteUrls = async (salesRepId, date) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 300));
-  
-  const targetDate = new Date(date);
-  let filteredData = [...leadsData];
-  
-  // Filter by sales rep
-  if (salesRepId) {
-    filteredData = filteredData.filter(lead => lead.addedBy === salesRepId);
-  }
-  
-  // Filter by specific date
-  if (date) {
-    filteredData = filteredData.filter(lead => {
-      const leadDate = new Date(lead.createdAt);
-      return leadDate.toDateString() === targetDate.toDateString();
+  try {
+    const { ApperClient } = window.ApperSDK;
+    const apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
+
+    const params = {
+      fields: [
+        { field: { Name: "Name" } }
+      ]
+    };
+
+    const response = await apperClient.fetchRecords('sales_rep_c', params);
+
+    if (!response.success) {
+      console.error(response.message);
+      return [];
+    }
+
+    return response.data || [];
+  } catch (error) {
+    console.error("Error fetching sales reps for filter:", error?.response?.data?.message || error.message);
+    return [];
   }
-  
-  // If no data found, generate sample data for testing
-  if (filteredData.length === 0 && salesRepId) {
-    filteredData = generateSampleDailyData(salesRepId, targetDate);
-  }
-  
-  // Filter to only include fresh leads that never existed before
-  const freshLeads = await getFreshLeadsOnly(filteredData);
-  
-  // Clean website URLs and return with performance indicator
-  const cleanedData = freshLeads.map(lead => ({
-    ...lead,
-    websiteUrl: cleanWebsiteUrl(lead.websiteUrl)
-  }));
-  
-  return cleanedData;
 };
 
-// Generate sample data for testing Daily Leads Report
-const generateSampleDailyData = (salesRepId, targetDate) => {
-  const salesRep = salesRepsData.find(rep => rep.Id === salesRepId);
-  if (!salesRep) return [];
-  
-  const sampleWebsites = [
-    { url: 'https://techstartup.com', category: 'Technology' },
-    { url: 'https://marketing-agency.co', category: 'Marketing' },
-    { url: 'https://ecommerce-store.shop', category: 'E-commerce' },
-    { url: 'https://consulting-firm.biz', category: 'Consulting' },
-    { url: 'https://healthcare-app.io', category: 'Healthcare' },
-    { url: 'https://fintech-solution.net', category: 'Finance' },
-    { url: 'https://education-platform.edu', category: 'Education' },
-    { url: 'https://real-estate-pro.com', category: 'Real Estate' },
-    { url: 'https://food-delivery.app', category: 'Food & Beverage' },
-    { url: 'https://fitness-tracker.fit', category: 'Fitness' },
-    { url: 'https://travel-booking.world', category: 'Travel' },
-    { url: 'https://creative-studio.design', category: 'Design' },
-    { url: 'https://logistics-hub.cargo', category: 'Logistics' },
-    { url: 'https://gaming-platform.play', category: 'Gaming' },
-    { url: 'https://media-streaming.tv', category: 'Media' }
-  ];
-  
-  const statuses = [
-    'New Lead', 'Connected', 'Meeting Booked', 'Meeting Done', 
-    'Rejected', 'Follow-up Required', 'Negotiation', 'Closed Won'
-  ];
-  
-  const fundingTypes = ['Bootstrapped', 'Seed', 'Series A', 'Series B', 'Series C'];
-  
-  // Generate 8-15 sample leads for the selected date
-  const numLeads = Math.floor(Math.random() * 8) + 8;
-  const sampleData = [];
-  
-  for (let i = 0; i < numLeads; i++) {
-    const website = sampleWebsites[i % sampleWebsites.length];
-    const baseUrl = website.url.replace('https://', '');
-    const uniqueUrl = `https://${baseUrl.replace('.', `-${i + 1}.`)}`;
-    
-    // Create sample lead with realistic data
-    const lead = {
-      Id: Date.now() + i,
-      websiteUrl: uniqueUrl,
-      category: website.category,
-      teamSize: Math.floor(Math.random() * 200) + 10,
-      arr: Math.floor(Math.random() * 5000000) + 100000,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      fundingType: fundingTypes[Math.floor(Math.random() * fundingTypes.length)],
-      addedBy: salesRepId,
-      addedByName: salesRep.name,
-      createdAt: new Date(
-        targetDate.getFullYear(),
-        targetDate.getMonth(),
-        targetDate.getDate(),
-        Math.floor(Math.random() * 24), // Random hour
-        Math.floor(Math.random() * 60)  // Random minute
-      ).toISOString(),
-      followUpDate: new Date(
-        targetDate.getTime() + Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000
-      ).toISOString()
+export const getDailyWebsiteUrls = async (salesRepId, date) => {
+  try {
+    const { ApperClient } = window.ApperSDK;
+    const apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+
+    const params = {
+      fields: [
+        { field: { Name: "Name" } },
+        { field: { Name: "product_name_c" } },
+        { field: { Name: "website_url_c" } },
+        { field: { Name: "category_c" } },
+        { field: { Name: "status_c" } },
+        { field: { Name: "arr_c" } },
+        { field: { Name: "created_at_c" } }
+      ],
+      where: []
     };
-    
-    sampleData.push(lead);
+
+    // Filter by sales rep
+    if (salesRepId) {
+      params.where.push({
+        FieldName: "added_by_c",
+        Operator: "EqualTo",
+        Values: [salesRepId]
+      });
+    }
+
+    // Filter by date
+    if (date) {
+      params.where.push({
+        FieldName: "created_at_c",
+        Operator: "ExactMatch",
+        SubOperator: "Day",
+        Values: [new Date(date).toLocaleDateString('en-GB', { 
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric'
+        })]
+      });
+    }
+
+    const response = await apperClient.fetchRecords('lead_c', params);
+
+    if (!response.success) {
+      console.error(response.message);
+      return [];
+    }
+
+    const data = response.data || [];
+    return data.map(lead => ({
+      Id: lead.Id,
+      Name: lead.Name,
+      productName: lead.product_name_c || '',
+      websiteUrl: cleanWebsiteUrl(lead.website_url_c || ''),
+      category: lead.category_c || '',
+      status: lead.status_c || '',
+      arr: lead.arr_c || 0,
+      createdAt: lead.created_at_c || new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error("Error fetching daily website URLs:", error?.response?.data?.message || error.message);
+    return [];
   }
-  
-  return sampleData;
 };
 
 // Re-export sales reps for easy access
 export { getSalesReps } from './salesRepService';
 
-// Export lead data for external use (CSV, etc.)
 export const exportWebsiteUrlData = async (filters = {}) => {
   const result = await getWebsiteUrlActivity(filters);
   

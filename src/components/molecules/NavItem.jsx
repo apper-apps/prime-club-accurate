@@ -1,40 +1,25 @@
-import { NavLink } from "react-router-dom";
-import { motion } from "framer-motion";
-import ApperIcon from "@/components/ApperIcon";
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import ApperIcon from '@/components/ApperIcon';
 
-const NavItem = ({ to, icon, label, isCollapsed = false }) => {
+const NavItem = ({ path, label, icon, isActive, isCollapsed }) => {
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) => `
-        flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group relative
-        ${isActive 
-          ? "bg-primary-50 text-primary-700 border-l-4 border-primary-600" 
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-        }
-      `}
-    >
-      {({ isActive }) => (
-        <>
-          <ApperIcon 
-            name={icon} 
-            size={20} 
-            className={`shrink-0 ${isActive ? "text-primary-600" : "text-gray-500 group-hover:text-gray-700"}`} 
-          />
-          {!isCollapsed && (
-            <span className="ml-3 font-medium">{label}</span>
-          )}
-          {isActive && (
-            <motion.div
-              layoutId="activeIndicator"
-              className="absolute left-0 top-0 bottom-0 w-1 bg-primary-600 rounded-r-full"
-              initial={false}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-            />
-          )}
-        </>
-      )}
-    </NavLink>
+    <Link to={path}>
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
+          isActive
+            ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-700'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        } ${isCollapsed ? 'justify-center' : ''}`}
+      >
+        <ApperIcon name={icon} size={20} className="flex-shrink-0" />
+        {!isCollapsed && (
+          <span className="ml-3 text-sm font-medium">{label}</span>
+        )}
+      </motion.div>
+    </Link>
   );
 };
 
