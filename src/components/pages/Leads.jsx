@@ -151,14 +151,7 @@ const handleStatusChange = async (leadId, newStatus) => {
           }
         } catch (dealError) {
           console.error("Failed to handle deal operation:", dealError);
-          toast.warning("Lead status updated, but failed to sync with deal pipeline");
-        }
-      } else {
-await createDeal(dealData);
-          }
-        } catch (dealError) {
-          console.error("Failed to handle deal operation:", dealError);
-          toast.warning("Lead status updated, but failed to sync with deal pipeline");
+toast.warning("Lead status updated, but failed to sync with deal pipeline");
         }
       } else {
         toast.success("Lead status updated successfully!");
