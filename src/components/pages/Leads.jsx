@@ -107,10 +107,22 @@ const handleStatusChange = async (leadId, newStatus) => {
         "Closed Lost": "Lost"
       };
       
-      // Check if status maps to a pipeline stage
+// Check if status maps to a pipeline stage
       const targetStage = statusToStageMap[newStatus];
       
-      if (targetStage) {
+      // Define statuses that should NOT create deals
+      const excludedStatuses = [
+        "Connected",
+        "Locked", 
+        "Meeting Booked",
+        "Meeting Done",
+        "Lost",
+        "Closed",
+        "Negotiation"
+      ];
+      
+      // Only create/update deals if status is mapped AND not in excluded list
+      if (targetStage && !excludedStatuses.includes(newStatus)) {
         try {
           // Get current deals to check if one exists for this lead
           const currentDeals = await getDeals();
@@ -119,10 +131,10 @@ const handleStatusChange = async (leadId, newStatus) => {
           if (existingDeal) {
             // Update existing deal to the new stage
             await updateDeal(existingDeal.Id, { stage: targetStage });
-toast.success(`Lead status updated and deal moved to ${targetStage} stage!`);
+            toast.success(`Lead status updated and deal moved to ${targetStage} stage!`);
           } else {
-// Create new deal in the target stage
-const dealData = {
+            // Create new deal in the target stage
+            const dealData = {
               name: updatedLead.productName || `${updatedLead.websiteUrl} Deal`,
               leadName: updatedLead.name || updatedLead.websiteUrl.replace(/^https?:\/\//, '').replace(/\/$/, ''),
               leadId: leadId.toString(),
