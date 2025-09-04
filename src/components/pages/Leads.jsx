@@ -98,6 +98,7 @@ const handleStatusChange = async (leadId, newStatus) => {
       );
       
       // Define status-to-stage mapping for common statuses
+// Define status-to-stage mapping for common statuses
       const statusToStageMap = {
         "Connected": "Connected",
         "Locked": "Locked", 
@@ -110,18 +111,19 @@ const handleStatusChange = async (leadId, newStatus) => {
 // Check if status maps to a pipeline stage
       const targetStage = statusToStageMap[newStatus];
       
-      // Define statuses that should NOT create deals
+      // Define statuses that should NOT create deals (non-pipeline statuses)
       const excludedStatuses = [
-        "Connected",
-        "Locked", 
-        "Meeting Booked",
-        "Meeting Done",
-        "Lost",
-        "Closed",
-        "Negotiation"
+        "Keep an Eye",
+        "Rejected", 
+        "Unsubscribed",
+        "Outdated",
+        "Hotlist",
+        "Out of League",
+        "Launched on AppSumo",
+        "Launched on Prime Club"
       ];
       
-      // Only create/update deals if status is mapped AND not in excluded list
+// Only create/update deals if status is mapped AND not in excluded list
       if (targetStage && !excludedStatuses.includes(newStatus)) {
         try {
           // Get current deals to check if one exists for this lead
@@ -146,6 +148,13 @@ const handleStatusChange = async (leadId, newStatus) => {
               edition: updatedLead.edition || "Select Edition"
             };
             await createDeal(dealData);
+          }
+        } catch (dealError) {
+          console.error("Failed to handle deal operation:", dealError);
+          toast.warning("Lead status updated, but failed to sync with deal pipeline");
+        }
+      } else {
+await createDeal(dealData);
           }
         } catch (dealError) {
           console.error("Failed to handle deal operation:", dealError);
