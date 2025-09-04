@@ -850,6 +850,9 @@ className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase track
                             <th
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Status
                             </th>
+<th
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">Edition
+                                                    </th>
                             <th
                                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[140px]">Funding Type
                                                     </th>
@@ -991,6 +994,24 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                             onChange={e => handleEmptyRowUpdate(emptyRow.Id, "status", e.target.value)}
                                             className="absolute inset-0 opacity-0 cursor-pointer w-full">
                                             {statusOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                                        </select>
+                                    </div>
+                                </td>
+<td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                                    <div className="relative">
+                                        <Badge
+                                            variant={emptyRow.edition === "Black Edition" ? "primary" : "default"}
+                                            className="cursor-pointer hover:shadow-md transition-shadow opacity-60">
+                                            {emptyRow.edition || "Select Edition"}
+                                        </Badge>
+                                        <select
+                                            value={emptyRow.edition || "Select Edition"}
+                                            onChange={e => handleEmptyRowUpdate(emptyRow.Id, "edition", e.target.value)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer w-full">
+                                            <option value="Select Edition">Select Edition</option>
+                                            <option value="Black Edition">Black Edition</option>
+                                            <option value="Collector's Edition">Collector's Edition</option>
+                                            <option value="Limited Edition">Limited Edition</option>
                                         </select>
                                     </div>
                                 </td>
@@ -1198,6 +1219,24 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                         onChange={e => handleStatusChange(lead.Id, e.target.value)}
                                         className="absolute inset-0 opacity-0 cursor-pointer w-full">
                                         {statusOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                                    </select>
+                                </div>
+                            </td>
+<td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                                <div className="relative">
+                                    <Badge
+                                        variant={lead.edition === "Black Edition" ? "primary" : "default"}
+                                        className="cursor-pointer hover:shadow-md transition-shadow">
+                                        {lead.edition || "Select Edition"}
+                                    </Badge>
+                                    <select
+                                        value={lead.edition || "Select Edition"}
+                                        onChange={e => handleFieldUpdate(lead.Id, "edition", e.target.value)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full">
+                                        <option value="Select Edition">Select Edition</option>
+                                        <option value="Black Edition">Black Edition</option>
+                                        <option value="Collector's Edition">Collector's Edition</option>
+                                        <option value="Limited Edition">Limited Edition</option>
                                     </select>
                                 </div>
                             </td>
