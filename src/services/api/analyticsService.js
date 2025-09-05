@@ -44,7 +44,7 @@ export const getLeadsAnalytics = async (period = 'all', userId = 'all') => {
     });
 
     const params = {
-      fields: [
+fields: [
         { field: { Name: "Name" } },
         { field: { Name: "product_name_c" } },
         { field: { Name: "website_url_c" } },
@@ -85,8 +85,13 @@ export const getLeadsAnalytics = async (period = 'all', userId = 'all') => {
     }
 
     const leads = response.data.map(lead => ({
-      ...lead,
-      addedByName: lead.added_by_c?.Name || 'Unknown'
+...lead,
+      addedByName: lead.added_by_c?.Name || 'Unknown',
+      productName: lead.product_name_c || 'Unknown Product',
+      websiteUrl: lead.website_url_c || 'Unknown URL',
+      category: lead.category_c || 'General',
+      status: lead.status_c || 'Unknown',
+      createdAt: lead.created_at_c || new Date().toISOString()
     }));
 
     return {
@@ -290,7 +295,7 @@ export const getUserPerformance = async () => {
     const leadsResponse = await apperClient.fetchRecords('lead_c', leadsParams);
     const allLeads = leadsResponse.success ? leadsResponse.data : [];
 
-    const userStats = response.data.map(rep => {
+const userStats = response.data.map(rep => {
       const userLeads = allLeads.filter(lead => lead.added_by_c?.Id === rep.Id);
       
       const today = new Date().toISOString().split('T')[0];
@@ -309,20 +314,75 @@ export const getUserPerformance = async () => {
         new Date(lead.created_at_c) >= monthStart
       );
 
-      return {
-        ...rep,
+return {
+        Id: rep.Id,
+        name: rep.Name || 'Unknown Rep',
+        leadsContacted: rep.leads_contacted_c || 0,
+        meetingsBooked: rep.meetings_booked_c || 0,
+        dealsClosed: rep.deals_closed_c || 0,
+        totalRevenue: rep.total_revenue_c || 0,
         totalLeads: userLeads.length,
-        todayLeads: todayLeads.length,
-        weekLeads: weekLeads.length,
-        monthLeads: monthLeads.length,
-        conversionRate: rep.meetings_booked_c > 0 ? 
-          Math.round((rep.deals_closed_c / rep.meetings_booked_c) * 100) : 0
+        weekLeads: userLeads.filter(lead => {
+          const leadDate = new Date(lead.created_at_c || Date.now());
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return leadDate >= weekAgo;
+        }).length,
+        todayLeads: userLeads.filter(lead => {
+          const leadDate = new Date(lead.created_at_c || Date.now());
+          const today = new Date();
+          return leadDate.toDateString() === today.toDateString();
+        }).length
       };
     });
 
     return userStats.sort((a, b) => b.totalLeads - a.totalLeads);
   } catch (error) {
-    console.error("Error fetching user performance:", error?.response?.data?.message || error.message);
+    if (error?.response?.data?.message) {
+      console.error("Error fetching user performance:", error?.response?.data?.message);
+    } else {
+      console.error(error);
+    }
     return [];
   }
-};
+}
+
+// Export additional function to get sales reps list for dropdown
+export const getSalesRepsList = async () => {
+  try {
+    const { ApperClient } = window.ApperSDK;
+    const apperClient = new ApperClient({
+      apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+      apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+    });
+
+    const params = {
+      fields: [
+        { field: { Name: "Name" } }
+      ]
+    };
+
+    const response = await apperClient.fetchRecords('sales_rep_c', params);
+
+    if (!response.success) {
+      console.error(response.message);
+      return [];
+    }
+
+    if (!response.data || response.data.length === 0) {
+      return [];
+    }
+
+    return response.data.map(rep => ({
+      Id: rep.Id,
+      name: rep.Name || 'Unknown Rep'
+    }));
+  } catch (error) {
+    if (error?.response?.data?.message) {
+      console.error("Error fetching sales reps list:", error?.response?.data?.message);
+    } else {
+      console.error(error);
+    }
+return [];
+  }
+}

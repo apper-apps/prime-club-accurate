@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Chart from "react-apexcharts";
-import { getDailyLeadsChart, getLeadsAnalytics, getLeadsMetrics, getUserPerformance } from "@/services/api/analyticsService";
+import { getDailyLeadsChart, getLeadsAnalytics, getLeadsMetrics, getSalesRepsList, getUserPerformance } from "@/services/api/analyticsService";
 import { getLeads } from "@/services/api/leadsService";
-import salesRepData from "@/services/mockData/salesReps.json";
 import ApperIcon from "@/components/ApperIcon";
 import MetricCard from "@/components/molecules/MetricCard";
 import Error from "@/components/ui/Error";
@@ -17,8 +16,9 @@ const Analytics = () => {
   const [error, setError] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [metrics, setMetrics] = useState(null);
-  const [filteredLeads, setFilteredLeads] = useState([]);
+const [filteredLeads, setFilteredLeads] = useState([]);
   const [userPerformance, setUserPerformance] = useState([]);
+  const [salesReps, setSalesReps] = useState([]);
   
 // Filters
   const [selectedUser, setSelectedUser] = useState('all');
@@ -40,7 +40,7 @@ const Analytics = () => {
     { value: 60, label: '60 Days' }
   ];
 
-  const loadAnalyticsData = async () => {
+const loadAnalyticsData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -49,20 +49,23 @@ const Analytics = () => {
         analyticsData,
         chartResult,
         metricsData,
-        performanceData
+        performanceData,
+        salesRepsData
       ] = await Promise.all([
         getLeadsAnalytics(selectedPeriod, selectedUser),
         getDailyLeadsChart(selectedUser, chartDays),
         getLeadsMetrics(selectedUser),
-        getUserPerformance()
+        getUserPerformance(),
+        getSalesRepsList()
       ]);
 
-      setFilteredLeads(analyticsData.leads);
+      setFilteredLeads(analyticsData?.leads || []);
       setChartData(chartResult);
       setMetrics(metricsData);
-      setUserPerformance(performanceData);
+      setUserPerformance(performanceData || []);
+      setSalesReps(salesRepsData || []);
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || 'Failed to load analytics data');
     } finally {
       setLoading(false);
     }
@@ -147,11 +150,11 @@ useEffect(() => {
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
-          >
+>
             <option value="all">All Sales Reps</option>
-            {salesRepData.map(rep => (
+            {salesReps && salesReps.length > 0 && salesReps.map(rep => (
               <option key={rep.Id} value={rep.Id.toString()}>
-                {rep.name}
+                {rep.name || 'Unknown Rep'}
               </option>
             ))}
           </select>
@@ -343,9 +346,9 @@ useEffect(() => {
             <h3 className="text-lg font-semibold text-gray-900">
               Recent Leads
             </h3>
-            <p className="text-sm text-gray-600 mt-1">
+<p className="text-sm text-gray-600 mt-1">
               {selectedPeriod === 'all' ? 'Latest' : periods.find(p => p.value === selectedPeriod)?.label} leads
-              {selectedUser !== 'all' && ` by ${salesRepData.find(r => r.Id.toString() === selectedUser)?.name}`}
+              {selectedUser !== 'all' && salesReps && salesReps.length > 0 && ` by ${salesReps.find(r => r.Id.toString() === selectedUser)?.name || 'Unknown Rep'}`}
             </p>
           </div>
 <div className="space-y-3">
