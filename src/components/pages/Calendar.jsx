@@ -12,7 +12,8 @@ import { getDeals } from "@/services/api/dealsService";
 
 const Calendar = () => {
   const [deals, setDeals] = useState([]);
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
+  const [updateLoading, setUpdateLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -45,7 +46,7 @@ useEffect(() => {
 
 const handleDealUpdate = async (dealId, updates) => {
     try {
-      setLoading(true);
+      setUpdateLoading(true);
       
       // Import updateDeal service
       const { updateDeal } = await import("@/services/api/dealsService");
@@ -63,7 +64,7 @@ const handleDealUpdate = async (dealId, updates) => {
       console.error("Error updating deal timeline:", error);
       toast.error("Failed to update deal timeline");
     } finally {
-      setLoading(false);
+      setUpdateLoading(false);
     }
   };
 
@@ -76,7 +77,7 @@ const getDealsForMonth = (monthIndex) => {
     });
   };
 
-  if (loading) return <Loading />;
+if (loading) return <Loading />;
   if (error) return <Error message={error} onRetry={loadDeals} />;
 
   return (

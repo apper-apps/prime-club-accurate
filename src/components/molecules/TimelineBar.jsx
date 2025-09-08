@@ -140,7 +140,7 @@ return (
       initial={{ opacity: 0, scaleX: 0 }}
       animate={{ opacity: 1, scaleX: 1 }}
       transition={{ duration: 0.3 }}
-      className={`absolute top-0 h-full rounded-lg shadow-lg transition-all duration-200 group select-none
+className={`absolute top-0 h-full rounded-lg shadow-lg transition-all duration-200 group select-none
         ${isDragging ? "ring-2 ring-primary-400 ring-opacity-60 cursor-grabbing scale-105 z-10" : "hover:shadow-xl cursor-grab"}
         ${isResizing ? "ring-2 ring-blue-400 ring-opacity-60 cursor-ew-resize" : ""}
 `}
