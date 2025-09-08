@@ -63,8 +63,9 @@ const handleMouseMove = (e) => {
     const monthWidth = rect.width / 12;
     const relativeX = e.clientX - rect.left;
     const monthPosition = Math.max(0, Math.min(11, Math.floor(relativeX / monthWidth)));
+    
     if (isDragging) {
-// Calculate new start position while maintaining duration
+      // Calculate new start position while maintaining duration
       const startMonth = deal.startMonth || 1;
       const endMonth = deal.endMonth || 3;
       const duration = endMonth - startMonth + 1;
@@ -72,6 +73,7 @@ const handleMouseMove = (e) => {
       const newEndMonth = newStartMonth + duration - 1;
 
       if (newStartMonth !== startMonth) {
+        // Trigger async update with loading state
         onUpdate({
           startMonth: newStartMonth,
           endMonth: newEndMonth
@@ -97,7 +99,7 @@ const handleMouseMove = (e) => {
 
 // Add global mouse event listeners when dragging
   useEffect(() => {
-    if (isDragging || isResizing) {
+if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -141,8 +143,8 @@ return (
       className={`absolute top-0 h-full rounded-lg shadow-lg transition-all duration-200 group select-none
         ${isDragging ? "ring-2 ring-primary-400 ring-opacity-60 cursor-grabbing scale-105 z-10" : "hover:shadow-xl cursor-grab"}
         ${isResizing ? "ring-2 ring-blue-400 ring-opacity-60 cursor-ew-resize" : ""}
-      `}
-style={{
+`}
+      style={{
         left: `${leftPosition}%`,
         width: `${width}%`,
         minWidth: "40px",
