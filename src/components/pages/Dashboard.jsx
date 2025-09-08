@@ -110,31 +110,11 @@ const loadDailyData = async (repId = selectedSalesRep?.Id, dateFilter = dailyDat
     
     try {
       setDailyLoading(true);
-      let targetDate = '';
       
-      if (dateFilter === 'today') {
-        targetDate = new Date().toISOString().split('T')[0];
-      } else if (dateFilter === 'yesterday') {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        targetDate = yesterday.toISOString().split('T')[0];
-      } else if (dateFilter === 'custom' && customDateValue) {
-        targetDate = customDateValue;
-      }
-      
-      // Load fresh daily data from leads service and website URLs
-      const [websiteUrlsData, leadsReportData] = await Promise.all([
-        getDailyWebsiteUrls(repId, targetDate),
-        getDailyLeadsReport()
-      ]);
-      
-      // Filter leads report data by selected sales rep and date
-      const filteredLeadsData = leadsReportData.find(rep => rep.salesRepId === repId)?.leads || [];
-      const dateFilteredLeads = filteredLeadsData.filter(lead => {
-        if (!targetDate) return true;
-        const leadDate = lead.createdAt.split('T')[0];
-        return leadDate === targetDate;
-      });
+      // Get daily website URLs filtered by sales rep and date using actual database
+      const websiteUrlsData = await getDailyWebsiteUrls(repId, dateFilter === 'today' ? new Date().toISOString().split('T')[0] : 
+        dateFilter === 'yesterday' ? new Date(Date.now() - 86400000).toISOString().split('T')[0] :
+        dateFilter === 'custom' && customDateValue ? customDateValue : '');
       
       setDailyUrls(websiteUrlsData);
       
