@@ -43,6 +43,9 @@ const getBarColor = (edition) => {
     return colors[mappedEdition] || colors.select;
   };
 
+// Track pending updates to apply when drag completes
+  const [pendingUpdates, setPendingUpdates] = useState(null);
+
   const handleMouseDown = (e) => {
     if (e.target.classList.contains("resize-handle")) {
       setIsResizing(true);
@@ -53,7 +56,7 @@ const getBarColor = (edition) => {
     }
   };
 
-const handleMouseMove = (e) => {
+  const handleMouseMove = (e) => {
     if (!isDragging && !isResizing) return;
 
     const calendar = document.querySelector('.grid.grid-cols-12');
@@ -73,8 +76,8 @@ const handleMouseMove = (e) => {
       const newEndMonth = newStartMonth + duration - 1;
 
       if (newStartMonth !== startMonth) {
-        // Trigger async update with loading state
-        onUpdate({
+        // Store pending updates but don't trigger API call during drag
+        setPendingUpdates({
           startMonth: newStartMonth,
           endMonth: newEndMonth
         });
@@ -86,20 +89,29 @@ const handleMouseMove = (e) => {
       const newEndMonth = Math.max(startMonth, Math.min(12, monthPosition + 1));
       
       if (newEndMonth !== endMonth) {
-        onUpdate({
+        // Store pending updates but don't trigger API call during resize
+        setPendingUpdates({
           endMonth: newEndMonth
         });
       }
     }
   };
+
   const handleMouseUp = () => {
+    // Apply pending updates when drag/resize completes
+    if (pendingUpdates) {
+      onUpdate(pendingUpdates);
+      setPendingUpdates(null);
+    }
+    
     setIsDragging(false);
-    setIsResizing(false);
+setIsResizing(false);
   };
 
 // Add global mouse event listeners when dragging
+// Add global mouse event listeners when dragging
   useEffect(() => {
-if (isDragging || isResizing) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -107,7 +119,7 @@ if (isDragging || isResizing) {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, deal.startMonth, deal.endMonth, pendingUpdates]);
   const handleDoubleClick = (e) => {
     e.stopPropagation();
     setIsEditing(true);
@@ -128,12 +140,12 @@ if (isDragging || isResizing) {
     setIsEditing(false);
   };
 
-  const startMonth = deal.startMonth || 1;
-  const endMonth = deal.endMonth || 3;
-  const duration = endMonth - startMonth + 1;
-  const leftPosition = ((startMonth - 1) / 12) * 100;
+// Use pending updates for visual positioning during drag, otherwise use deal data
+  const currentStartMonth = pendingUpdates?.startMonth ?? deal.startMonth ?? 1;
+  const currentEndMonth = pendingUpdates?.endMonth ?? deal.endMonth ?? 3;
+  const duration = currentEndMonth - currentStartMonth + 1;
+  const leftPosition = ((currentStartMonth - 1) / 12) * 100;
   const width = (duration / 12) * 100;
-
 return (
     <motion.div
       ref={barRef}
@@ -183,8 +195,8 @@ className="bg-white text-gray-900 px-1 sm:px-2 py-1 rounded text-xs sm:text-sm f
       
       {/* Tooltip */}
       <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-        <div className="font-semibold">{deal.name}</div>
-        <div>{months[startMonth - 1]} - {months[endMonth - 1]}</div>
+<div className="font-semibold">{deal.name}</div>
+        <div>{months[currentStartMonth - 1]} - {months[currentEndMonth - 1]}</div>
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
       </div>
     </motion.div>

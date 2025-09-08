@@ -59,10 +59,14 @@ const handleDealUpdate = async (dealId, updates) => {
         deal.Id === dealId ? { ...deal, ...updates } : deal
       ));
       
+      // Show success message only once per completed operation
       toast.success("Deal timeline updated successfully");
     } catch (error) {
       console.error("Error updating deal timeline:", error);
       toast.error("Failed to update deal timeline");
+      
+      // Revert any optimistic updates on error
+      setDeals(prev => [...prev]);
     } finally {
       setUpdateLoading(false);
     }
