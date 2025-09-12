@@ -1,41 +1,65 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { getSalesReps } from "@/services/api/salesRepService";
+import ApperIcon from "@/components/ApperIcon";
+import Leads from "@/components/pages/Leads";
+import Button from "@/components/atoms/Button";
+import Avatar from "@/components/atoms/Avatar";
 import Card from "@/components/atoms/Card";
 import Badge from "@/components/atoms/Badge";
-import Avatar from "@/components/atoms/Avatar";
+import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
-import ApperIcon from "@/components/ApperIcon";
-import { getSalesReps } from "@/services/api/salesRepService";
 
 const Leaderboard = () => {
-  const [salesReps, setSalesReps] = useState([]);
+const [salesReps, setSalesReps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const loadSalesReps = async () => {
+  const [refreshing, setRefreshing] = useState(false);
+const [lastUpdated, setLastUpdated] = useState(null);
+  
+  const loadSalesReps = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError("");
       
       const data = await getSalesReps();
-      // Sort by total performance score
+      // Enhanced performance score calculation with conversion rate
       const sortedReps = data.sort((a, b) => {
-        const scoreA = a.dealsClosed * 3 + a.meetingsBooked * 2 + a.leadsContacted;
-        const scoreB = b.dealsClosed * 3 + b.meetingsBooked * 2 + b.leadsContacted;
+        // Weighted scoring: conversion rate (4x), deals closed (3x), meetings booked (2x), leads contacted (1x)
+        const scoreA = (a.conversionRate || 0) * 4 + a.dealsClosed * 3 + a.meetingsBooked * 2 + a.leadsContacted;
+        const scoreB = (b.conversionRate || 0) * 4 + b.dealsClosed * 3 + b.meetingsBooked * 2 + b.leadsContacted;
         return scoreB - scoreA;
       });
+      
       setSalesReps(sortedReps);
+      setLastUpdated(new Date());
     } catch (err) {
-      setError("Failed to load sales reps");
+      console.error("Error loading sales reps:", err);
+      setError("Failed to load sales reps data");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  useEffect(() => {
+  const handleRefresh = () => {
+    loadSalesReps(true);
+  };
+
+useEffect(() => {
     loadSalesReps();
+    
+    // Set up automatic refresh every 5 minutes
+    const refreshInterval = setInterval(() => {
+      loadSalesReps(true);
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const formatCurrency = (amount) => {
@@ -75,13 +99,30 @@ const getRankIcon = (rank) => {
   if (loading) return <Loading type="table" />;
   if (error) return <Error message={error} onRetry={loadSalesReps} />;
 
-  return (
+return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
           <p className="text-gray-600 mt-1">Track and celebrate your top performers</p>
+          {lastUpdated && (
+            <p className="text-sm text-gray-500 mt-1">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
+          )}
         </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={loading || refreshing}
+          className="flex items-center gap-2"
+        >
+          <ApperIcon 
+            name="RefreshCw" 
+            size={16} 
+            className={refreshing ? "animate-spin" : ""} 
+          />
+          {refreshing ? "Refreshing..." : "Refresh"}
+        </Button>
       </div>
 
       {salesReps.length === 0 ? (

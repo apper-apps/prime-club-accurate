@@ -6,13 +6,14 @@ export const getSalesReps = async () => {
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
 
-    const params = {
+const params = {
       fields: [
         { field: { Name: "Name" } },
         { field: { Name: "leads_contacted_c" } },
         { field: { Name: "meetings_booked_c" } },
         { field: { Name: "deals_closed_c" } },
-        { field: { Name: "total_revenue_c" } }
+        { field: { Name: "total_revenue_c" } },
+        { field: { Name: "conversion_rate_c" } }
       ]
     };
 
@@ -27,13 +28,14 @@ export const getSalesReps = async () => {
       return [];
     }
 
-    return response.data.map(rep => ({
+return response.data.map(rep => ({
       Id: rep.Id,
       name: rep.Name,
       leadsContacted: rep.leads_contacted_c || 0,
       meetingsBooked: rep.meetings_booked_c || 0,
       dealsClosed: rep.deals_closed_c || 0,
-      totalRevenue: rep.total_revenue_c || 0
+      totalRevenue: rep.total_revenue_c || 0,
+      conversionRate: rep.conversion_rate_c || 0
     }));
   } catch (error) {
     console.error("Error fetching sales reps:", error?.response?.data?.message || error.message);
@@ -49,13 +51,14 @@ export const getSalesRepById = async (id) => {
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
 
-    const params = {
+const params = {
       fields: [
         { field: { Name: "Name" } },
         { field: { Name: "leads_contacted_c" } },
         { field: { Name: "meetings_booked_c" } },
         { field: { Name: "deals_closed_c" } },
-        { field: { Name: "total_revenue_c" } }
+        { field: { Name: "total_revenue_c" } },
+        { field: { Name: "conversion_rate_c" } }
       ]
     };
 
@@ -67,13 +70,14 @@ export const getSalesRepById = async (id) => {
     }
 
     const rep = response.data;
-    return {
+return {
       Id: rep.Id,
       name: rep.Name,
       leadsContacted: rep.leads_contacted_c || 0,
       meetingsBooked: rep.meetings_booked_c || 0,
       dealsClosed: rep.deals_closed_c || 0,
-      totalRevenue: rep.total_revenue_c || 0
+      totalRevenue: rep.total_revenue_c || 0,
+      conversionRate: rep.conversion_rate_c || 0
     };
   } catch (error) {
     console.error("Error fetching sales rep by ID:", error?.response?.data?.message || error.message);
@@ -91,12 +95,13 @@ export const createSalesRep = async (repData) => {
 
     const params = {
       records: [
-        {
+{
           Name: repData.name,
           leads_contacted_c: repData.leadsContacted || 0,
           meetings_booked_c: repData.meetingsBooked || 0,
           deals_closed_c: repData.dealsClosed || 0,
-          total_revenue_c: repData.totalRevenue || 0
+          total_revenue_c: repData.totalRevenue || 0,
+          conversion_rate_c: repData.conversionRate || 0
         }
       ]
     };
@@ -119,13 +124,14 @@ export const createSalesRep = async (repData) => {
       
       if (successfulRecords.length > 0) {
         const newRep = successfulRecords[0].data;
-        return {
+return {
           Id: newRep.Id,
           name: newRep.Name,
           leadsContacted: newRep.leads_contacted_c || 0,
           meetingsBooked: newRep.meetings_booked_c || 0,
           dealsClosed: newRep.deals_closed_c || 0,
-          totalRevenue: newRep.total_revenue_c || 0
+          totalRevenue: newRep.total_revenue_c || 0,
+          conversionRate: newRep.conversion_rate_c || 0
         };
       }
     }
@@ -149,11 +155,12 @@ export const updateSalesRep = async (id, updates) => {
       Id: id
     };
 
-    if (updates.name !== undefined) updateData.Name = updates.name;
+if (updates.name !== undefined) updateData.Name = updates.name;
     if (updates.leadsContacted !== undefined) updateData.leads_contacted_c = updates.leadsContacted;
     if (updates.meetingsBooked !== undefined) updateData.meetings_booked_c = updates.meetingsBooked;
     if (updates.dealsClosed !== undefined) updateData.deals_closed_c = updates.dealsClosed;
     if (updates.totalRevenue !== undefined) updateData.total_revenue_c = updates.totalRevenue;
+    if (updates.conversionRate !== undefined) updateData.conversion_rate_c = updates.conversionRate;
 
     const params = {
       records: [updateData]
@@ -177,13 +184,14 @@ export const updateSalesRep = async (id, updates) => {
       
       if (successfulRecords.length > 0) {
         const updatedRep = successfulRecords[0].data;
-        return {
+return {
           Id: updatedRep.Id,
           name: updatedRep.Name,
           leadsContacted: updatedRep.leads_contacted_c || 0,
           meetingsBooked: updatedRep.meetings_booked_c || 0,
           dealsClosed: updatedRep.deals_closed_c || 0,
-          totalRevenue: updatedRep.total_revenue_c || 0
+          totalRevenue: updatedRep.total_revenue_c || 0,
+          conversionRate: updatedRep.conversion_rate_c || 0
         };
       }
     }
