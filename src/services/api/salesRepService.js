@@ -6,14 +6,96 @@ export const getSalesReps = async () => {
       apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
     });
 
-const params = {
+// Calculate real metrics from actual database data
+    const calculateMetricsForRep = async (apperClient, repId, repName) => {
+      try {
+        // Count leads contacted by this rep
+        const leadsParams = {
+          fields: [{ field: { Name: "Name" } }],
+          where: [{
+            FieldName: "added_by_c",
+            Operator: "EqualTo", 
+            Values: [repId]
+          }]
+        };
+        
+        const leadsResponse = await apperClient.fetchRecords('lead_c', leadsParams);
+        const leadsContacted = leadsResponse.success ? leadsResponse.data.length : 0;
+        
+        // Count meetings booked (Meeting Booked + Meeting Done stages)
+        const meetingsParams = {
+          fields: [{ field: { Name: "Name" } }],
+          where: [{
+            FieldName: "assigned_rep_c",
+            Operator: "EqualTo",
+            Values: [repId]
+          }],
+          whereGroups: [{
+            operator: "AND",
+            subGroups: [{
+              conditions: [{
+                fieldName: "stage_c",
+                operator: "ExactMatch", 
+                values: ["Meeting Booked", "Meeting Done"]
+              }],
+              operator: "OR"
+            }]
+          }]
+        };
+        
+        const meetingsResponse = await apperClient.fetchRecords('deal_c', meetingsParams);
+        const meetingsBooked = meetingsResponse.success ? meetingsResponse.data.length : 0;
+        
+        // Count closed deals and calculate revenue
+        const closedDealsParams = {
+          fields: [
+            { field: { Name: "Name" } },
+            { field: { Name: "value_c" } }
+          ],
+          where: [
+            {
+              FieldName: "assigned_rep_c",
+              Operator: "EqualTo",
+              Values: [repId]
+            },
+            {
+              FieldName: "stage_c", 
+              Operator: "EqualTo",
+              Values: ["Closed"]
+            }
+          ]
+        };
+        
+        const closedDealsResponse = await apperClient.fetchRecords('deal_c', closedDealsParams);
+        const closedDeals = closedDealsResponse.success ? closedDealsResponse.data : [];
+        const dealsClosed = closedDeals.length;
+        const totalRevenue = closedDeals.reduce((sum, deal) => sum + (deal.value_c || 0), 0);
+        
+        // Calculate conversion rate
+        const conversionRate = leadsContacted > 0 ? (dealsClosed / leadsContacted * 100) : 0;
+        
+        return {
+          leadsContacted,
+          meetingsBooked, 
+          dealsClosed,
+          totalRevenue,
+          conversionRate
+        };
+      } catch (error) {
+        console.error(`Error calculating metrics for rep ${repName}:`, error);
+        return {
+          leadsContacted: 0,
+          meetingsBooked: 0,
+          dealsClosed: 0, 
+          totalRevenue: 0,
+          conversionRate: 0
+        };
+      }
+    };
+
+    const params = {
       fields: [
-        { field: { Name: "Name" } },
-        { field: { Name: "leads_contacted_c" } },
-        { field: { Name: "meetings_booked_c" } },
-        { field: { Name: "deals_closed_c" } },
-        { field: { Name: "total_revenue_c" } },
-        { field: { Name: "conversion_rate_c" } }
+        { field: { Name: "Name" } }
       ]
     };
 
@@ -28,15 +110,23 @@ const params = {
       return [];
     }
 
-return response.data.map(rep => ({
-      Id: rep.Id,
-      name: rep.Name,
-      leadsContacted: rep.leads_contacted_c || 0,
-      meetingsBooked: rep.meetings_booked_c || 0,
-      dealsClosed: rep.deals_closed_c || 0,
-      totalRevenue: rep.total_revenue_c || 0,
-      conversionRate: rep.conversion_rate_c || 0
-    }));
+// Calculate real metrics for each sales rep
+    const repsWithMetrics = await Promise.all(
+      response.data.map(async (rep) => {
+        const metrics = await calculateMetricsForRep(apperClient, rep.Id, rep.Name);
+        return {
+          Id: rep.Id,
+          Name: rep.Name,
+          leads_contacted_c: metrics.leadsContacted,
+          meetings_booked_c: metrics.meetingsBooked,
+          deals_closed_c: metrics.dealsClosed,
+          total_revenue_c: metrics.totalRevenue,
+          conversion_rate_c: metrics.conversionRate
+        };
+      })
+    );
+
+    return repsWithMetrics;
   } catch (error) {
     console.error("Error fetching sales reps:", error?.response?.data?.message || error.message);
     return [];
@@ -52,13 +142,8 @@ export const getSalesRepById = async (id) => {
     });
 
 const params = {
-      fields: [
-        { field: { Name: "Name" } },
-        { field: { Name: "leads_contacted_c" } },
-        { field: { Name: "meetings_booked_c" } },
-        { field: { Name: "deals_closed_c" } },
-        { field: { Name: "total_revenue_c" } },
-        { field: { Name: "conversion_rate_c" } }
+fields: [
+        { field: { Name: "Name" } }
       ]
     };
 
@@ -70,14 +155,103 @@ const params = {
     }
 
     const rep = response.data;
-return {
+// Calculate metrics for single rep
+    const calculateMetricsForRep = async (apperClient, repId, repName) => {
+      try {
+        // Count leads contacted by this rep
+        const leadsParams = {
+          fields: [{ field: { Name: "Name" } }],
+          where: [{
+            FieldName: "added_by_c",
+            Operator: "EqualTo",
+            Values: [repId]
+          }]
+        };
+        
+        const leadsResponse = await apperClient.fetchRecords('lead_c', leadsParams);
+        const leadsContacted = leadsResponse.success ? leadsResponse.data.length : 0;
+        
+        // Count meetings booked (Meeting Booked + Meeting Done stages)
+        const meetingsParams = {
+          fields: [{ field: { Name: "Name" } }],
+          where: [{
+            FieldName: "assigned_rep_c",
+            Operator: "EqualTo",
+            Values: [repId]
+          }],
+          whereGroups: [{
+            operator: "AND",
+            subGroups: [{
+              conditions: [{
+                fieldName: "stage_c",
+                operator: "ExactMatch",
+                values: ["Meeting Booked", "Meeting Done"]
+              }],
+              operator: "OR"
+            }]
+          }]
+        };
+        
+        const meetingsResponse = await apperClient.fetchRecords('deal_c', meetingsParams);
+        const meetingsBooked = meetingsResponse.success ? meetingsResponse.data.length : 0;
+        
+        // Count closed deals and calculate revenue
+        const closedDealsParams = {
+          fields: [
+            { field: { Name: "Name" } },
+            { field: { Name: "value_c" } }
+          ],
+          where: [
+            {
+              FieldName: "assigned_rep_c",
+              Operator: "EqualTo",
+              Values: [repId]
+            },
+            {
+              FieldName: "stage_c",
+              Operator: "EqualTo", 
+              Values: ["Closed"]
+            }
+          ]
+        };
+        
+        const closedDealsResponse = await apperClient.fetchRecords('deal_c', closedDealsParams);
+        const closedDeals = closedDealsResponse.success ? closedDealsResponse.data : [];
+        const dealsClosed = closedDeals.length;
+        const totalRevenue = closedDeals.reduce((sum, deal) => sum + (deal.value_c || 0), 0);
+        
+        // Calculate conversion rate
+        const conversionRate = leadsContacted > 0 ? (dealsClosed / leadsContacted * 100) : 0;
+        
+        return {
+          leadsContacted,
+          meetingsBooked,
+          dealsClosed,
+          totalRevenue,
+          conversionRate
+        };
+      } catch (error) {
+        console.error(`Error calculating metrics for rep ${repName}:`, error);
+        return {
+          leadsContacted: 0,
+          meetingsBooked: 0,
+          dealsClosed: 0,
+          totalRevenue: 0,
+          conversionRate: 0
+        };
+      }
+    };
+
+    const metrics = await calculateMetricsForRep(apperClient, rep.Id, rep.Name);
+    
+    return {
       Id: rep.Id,
-      name: rep.Name,
-      leadsContacted: rep.leads_contacted_c || 0,
-      meetingsBooked: rep.meetings_booked_c || 0,
-      dealsClosed: rep.deals_closed_c || 0,
-      totalRevenue: rep.total_revenue_c || 0,
-      conversionRate: rep.conversion_rate_c || 0
+      Name: rep.Name,
+      leads_contacted_c: metrics.leadsContacted,
+      meetings_booked_c: metrics.meetingsBooked,
+      deals_closed_c: metrics.dealsClosed,
+      total_revenue_c: metrics.totalRevenue,
+      conversion_rate_c: metrics.conversionRate
     };
   } catch (error) {
     console.error("Error fetching sales rep by ID:", error?.response?.data?.message || error.message);
@@ -97,11 +271,11 @@ export const createSalesRep = async (repData) => {
       records: [
 {
           Name: repData.name,
-          leads_contacted_c: repData.leadsContacted || 0,
-          meetings_booked_c: repData.meetingsBooked || 0,
-          deals_closed_c: repData.dealsClosed || 0,
-          total_revenue_c: repData.totalRevenue || 0,
-          conversion_rate_c: repData.conversionRate || 0
+          leads_contacted_c: 0, // Will be calculated from actual data
+          meetings_booked_c: 0, // Will be calculated from actual data  
+          deals_closed_c: 0, // Will be calculated from actual data
+          total_revenue_c: 0, // Will be calculated from actual data
+          conversion_rate_c: 0 // Will be calculated from actual data
         }
       ]
     };
@@ -156,11 +330,9 @@ export const updateSalesRep = async (id, updates) => {
     };
 
 if (updates.name !== undefined) updateData.Name = updates.name;
-    if (updates.leadsContacted !== undefined) updateData.leads_contacted_c = updates.leadsContacted;
-    if (updates.meetingsBooked !== undefined) updateData.meetings_booked_c = updates.meetingsBooked;
-    if (updates.dealsClosed !== undefined) updateData.deals_closed_c = updates.dealsClosed;
-    if (updates.totalRevenue !== undefined) updateData.total_revenue_c = updates.totalRevenue;
-    if (updates.conversionRate !== undefined) updateData.conversion_rate_c = updates.conversionRate;
+// Note: Metrics are calculated from actual data, not directly updateable
+    // Only allow name updates, metrics will be recalculated
+    if (updates.name !== undefined) updateData.Name = updates.name;
 
     const params = {
       records: [updateData]
@@ -184,14 +356,103 @@ if (updates.name !== undefined) updateData.Name = updates.name;
       
       if (successfulRecords.length > 0) {
         const updatedRep = successfulRecords[0].data;
-return {
+// Calculate fresh metrics for updated rep
+        const calculateMetricsForRep = async (apperClient, repId, repName) => {
+          try {
+            // Count leads contacted by this rep
+            const leadsParams = {
+              fields: [{ field: { Name: "Name" } }],
+              where: [{
+                FieldName: "added_by_c",
+                Operator: "EqualTo",
+                Values: [repId]
+              }]
+            };
+            
+            const leadsResponse = await apperClient.fetchRecords('lead_c', leadsParams);
+            const leadsContacted = leadsResponse.success ? leadsResponse.data.length : 0;
+            
+            // Count meetings booked (Meeting Booked + Meeting Done stages)
+            const meetingsParams = {
+              fields: [{ field: { Name: "Name" } }],
+              where: [{
+                FieldName: "assigned_rep_c",
+                Operator: "EqualTo",
+                Values: [repId]
+              }],
+              whereGroups: [{
+                operator: "AND",
+                subGroups: [{
+                  conditions: [{
+                    fieldName: "stage_c",
+                    operator: "ExactMatch",
+                    values: ["Meeting Booked", "Meeting Done"]
+                  }],
+                  operator: "OR"
+                }]
+              }]
+            };
+            
+            const meetingsResponse = await apperClient.fetchRecords('deal_c', meetingsParams);
+            const meetingsBooked = meetingsResponse.success ? meetingsResponse.data.length : 0;
+            
+            // Count closed deals and calculate revenue
+            const closedDealsParams = {
+              fields: [
+                { field: { Name: "Name" } },
+                { field: { Name: "value_c" } }
+              ],
+              where: [
+                {
+                  FieldName: "assigned_rep_c",
+                  Operator: "EqualTo",
+                  Values: [repId]
+                },
+                {
+                  FieldName: "stage_c",
+                  Operator: "EqualTo",
+                  Values: ["Closed"]
+                }
+              ]
+            };
+            
+            const closedDealsResponse = await apperClient.fetchRecords('deal_c', closedDealsParams);
+            const closedDeals = closedDealsResponse.success ? closedDealsResponse.data : [];
+            const dealsClosed = closedDeals.length;
+            const totalRevenue = closedDeals.reduce((sum, deal) => sum + (deal.value_c || 0), 0);
+            
+            // Calculate conversion rate
+            const conversionRate = leadsContacted > 0 ? (dealsClosed / leadsContacted * 100) : 0;
+            
+            return {
+              leadsContacted,
+              meetingsBooked,
+              dealsClosed,
+              totalRevenue,
+              conversionRate
+            };
+          } catch (error) {
+            console.error(`Error calculating metrics for rep ${repName}:`, error);
+            return {
+              leadsContacted: 0,
+              meetingsBooked: 0,
+              dealsClosed: 0,
+              totalRevenue: 0,
+              conversionRate: 0
+            };
+          }
+        };
+
+        const metrics = await calculateMetricsForRep(apperClient, updatedRep.Id, updatedRep.Name);
+
+        return {
           Id: updatedRep.Id,
-          name: updatedRep.Name,
-          leadsContacted: updatedRep.leads_contacted_c || 0,
-          meetingsBooked: updatedRep.meetings_booked_c || 0,
-          dealsClosed: updatedRep.deals_closed_c || 0,
-          totalRevenue: updatedRep.total_revenue_c || 0,
-          conversionRate: updatedRep.conversion_rate_c || 0
+          Name: updatedRep.Name,
+          leads_contacted_c: metrics.leadsContacted,
+          meetings_booked_c: metrics.meetingsBooked,
+          deals_closed_c: metrics.dealsClosed,
+          total_revenue_c: metrics.totalRevenue,
+          conversion_rate_c: metrics.conversionRate
         };
       }
     }
