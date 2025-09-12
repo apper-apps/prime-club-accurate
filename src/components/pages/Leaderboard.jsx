@@ -29,13 +29,13 @@ const [lastUpdated, setLastUpdated] = useState(null);
       
       const data = await getSalesReps();
       // Enhanced performance score calculation with conversion rate
+// Enhanced performance score calculation with conversion rate
       const sortedReps = data.sort((a, b) => {
         // Weighted scoring: conversion rate (4x), deals closed (3x), meetings booked (2x), leads contacted (1x)
-        const scoreA = (a.conversionRate || 0) * 4 + a.dealsClosed * 3 + a.meetingsBooked * 2 + a.leadsContacted;
-        const scoreB = (b.conversionRate || 0) * 4 + b.dealsClosed * 3 + b.meetingsBooked * 2 + b.leadsContacted;
+        const scoreA = (a.conversion_rate_c || 0) * 4 + a.deals_closed_c * 3 + a.meetings_booked_c * 2 + a.leads_contacted_c;
+        const scoreB = (b.conversion_rate_c || 0) * 4 + b.deals_closed_c * 3 + b.meetings_booked_c * 2 + b.leads_contacted_c;
         return scoreB - scoreA;
       });
-      
       setSalesReps(sortedReps);
       setLastUpdated(new Date());
     } catch (err) {
@@ -139,28 +139,28 @@ return (
 <Card className="p-6 bg-gradient-to-r from-primary-100 to-primary-200 border-primary-300 shadow-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <Avatar name={salesReps[0].name} size="xl" />
+<div className="relative">
+                    <Avatar name={salesReps[0].Name} size="xl" />
                     <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-accent-400 to-accent-600 rounded-full flex items-center justify-center">
                       <ApperIcon name="Crown" size={16} className="text-white" />
                     </div>
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Hunter of the Month</h2>
-                    <p className="text-xl font-semibold text-primary-700">{salesReps[0].name}</p>
+                    <p className="text-xl font-semibold text-primary-700">{salesReps[0].Name}</p>
                     <div className="flex items-center space-x-4 mt-2">
                       <span className="text-sm text-gray-600">
-                        {salesReps[0].dealsClosed} deals closed
+                        {salesReps[0].deals_closed_c} deals closed
                       </span>
                       <span className="text-sm text-gray-600">
-                        {formatCurrency(salesReps[0].totalRevenue)} revenue
+                        {formatCurrency(salesReps[0].total_revenue_c)} revenue
                       </span>
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
+<div className="text-right">
                   <div className="text-3xl font-bold text-primary-600">
-                    {salesReps[0].dealsClosed * 3 + salesReps[0].meetingsBooked * 2 + salesReps[0].leadsContacted}
+                    {salesReps[0].deals_closed_c * 3 + salesReps[0].meetings_booked_c * 2 + salesReps[0].leads_contacted_c}
                   </div>
                   <div className="text-sm text-gray-600">Performance Score</div>
                 </div>
@@ -184,10 +184,9 @@ return (
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {salesReps.map((rep, index) => {
+{salesReps.map((rep, index) => {
                     const rank = index + 1;
-                    const score = rep.dealsClosed * 3 + rep.meetingsBooked * 2 + rep.leadsContacted;
-                    
+                    const score = rep.deals_closed_c * 3 + rep.meetings_booked_c * 2 + rep.leads_contacted_c;
                     return (
                       <motion.tr
                         key={rep.Id}
@@ -203,11 +202,11 @@ return (
                             {getRankIcon(rank)}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
+<td className="py-4 px-6">
                           <div className="flex items-center">
-                            <Avatar name={rep.name} size="sm" />
+                            <Avatar name={rep.Name} size="sm" />
                             <div className="ml-3">
-<div className="font-semibold text-gray-900">{rep.name}</div>
+<div className="font-semibold text-gray-900">{rep.Name}</div>
                               {rank === 1 && (
                                 <Badge variant="primary" size="sm">
                                   <ApperIcon name="Crown" size={12} className="mr-1" />
@@ -217,17 +216,17 @@ return (
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{rep.leadsContacted}</div>
+<td className="py-4 px-6">
+                          <div className="font-medium text-gray-900">{rep.leads_contacted_c}</div>
                         </td>
                         <td className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{rep.meetingsBooked}</div>
+                          <div className="font-medium text-gray-900">{rep.meetings_booked_c}</div>
                         </td>
 <td className="py-4 px-6">
-                          <div className="font-medium text-primary-600">{rep.dealsClosed}</div>
+                          <div className="font-medium text-primary-600">{rep.deals_closed_c}</div>
                         </td>
                         <td className="py-4 px-6">
-                          <div className="font-medium text-gray-900">{formatCurrency(rep.totalRevenue)}</div>
+                          <div className="font-medium text-gray-900">{formatCurrency(rep.total_revenue_c)}</div>
                         </td>
 <td className="py-4 px-6">
                           <div className="font-bold text-accent-600">{score}</div>
@@ -246,9 +245,9 @@ return (
               <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ApperIcon name="Users" size={24} className="text-primary-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Leads</h3>
+<h3 className="text-lg font-semibold text-gray-900 mb-2">Total Leads</h3>
               <p className="text-3xl font-bold text-primary-600">
-                {salesReps.reduce((sum, rep) => sum + rep.leadsContacted, 0)}
+                {salesReps.reduce((sum, rep) => sum + rep.leads_contacted_c, 0)}
               </p>
             </Card>
 
@@ -256,9 +255,9 @@ return (
               <div className="w-12 h-12 bg-primary-200 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ApperIcon name="Calendar" size={24} className="text-primary-700" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Meetings</h3>
+<h3 className="text-lg font-semibold text-gray-900 mb-2">Total Meetings</h3>
               <p className="text-3xl font-bold text-primary-700">
-                {salesReps.reduce((sum, rep) => sum + rep.meetingsBooked, 0)}
+                {salesReps.reduce((sum, rep) => sum + rep.meetings_booked_c, 0)}
               </p>
             </Card>
 
@@ -266,9 +265,9 @@ return (
               <div className="w-12 h-12 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <ApperIcon name="DollarSign" size={24} className="text-accent-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Revenue</h3>
+<h3 className="text-lg font-semibold text-gray-900 mb-2">Total Revenue</h3>
               <p className="text-3xl font-bold text-accent-600">
-                {formatCurrency(salesReps.reduce((sum, rep) => sum + rep.totalRevenue, 0))}
+                {formatCurrency(salesReps.reduce((sum, rep) => sum + rep.total_revenue_c, 0))}
               </p>
             </Card>
           </div>
