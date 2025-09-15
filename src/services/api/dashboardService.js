@@ -1,8 +1,10 @@
-import { getLeadsAnalytics, getUserPerformance } from "@/services/api/analyticsService";
+import React from "react";
 import { getLeads, getPendingFollowUps } from "@/services/api/leadsService";
 import { getWebsiteUrlActivity } from "@/services/api/reportService";
+import { getLeadsAnalytics, getUserPerformance } from "@/services/api/analyticsService";
 import salesRepsData from "@/services/mockData/salesReps.json";
 import dashboardData from "@/services/mockData/dashboard.json";
+import Error from "@/components/ui/Error";
 // Dashboard Service - Centralized data management for dashboard components
 
 // Standardized API delay for consistent UX
@@ -182,12 +184,13 @@ export const getDashboardMetrics = async () => {
     const conversionRate = totalLeads > 0 ? ((dealsClosed / totalLeads) * 100).toFixed(1) : 0;
 
     // Return dynamic metrics
+// Return dynamic metrics
     return [
       {
         id: "leads-contacted",
         title: "Total Leads Contacted",
         value: totalLeads.toString(),
-        icon: "users",
+        icon: "Users",
         trend: "up",
         trendValue: "+12%",
         color: "blue"
@@ -196,7 +199,7 @@ export const getDashboardMetrics = async () => {
         id: "meetings-booked",
         title: "Meetings Booked",
         value: meetingsBooked.toString(),
-        icon: "calendar",
+        icon: "Calendar",
         trend: "up",
         trendValue: "+8%",
         color: "green"
@@ -205,7 +208,7 @@ export const getDashboardMetrics = async () => {
         id: "deals-closed",
         title: "Deals Closed",
         value: dealsClosed.toString(),
-        icon: "trophy",
+        icon: "Trophy",
         trend: "up",
         trendValue: "+15%",
         color: "purple"
@@ -214,10 +217,11 @@ export const getDashboardMetrics = async () => {
         id: "conversion-rate",
         title: "Conversion Rate",
         value: `${conversionRate}%`,
-        icon: "trending-up",
+        icon: "TrendingUp",
         trend: "up",
         trendValue: "+2.3%",
         color: "orange"
+color: "orange"
       }
     ];
 
@@ -225,13 +229,12 @@ export const getDashboardMetrics = async () => {
     console.error('Failed to fetch dynamic dashboard metrics:', error.message);
     
     // Fallback to static data if database queries fail
-    if (!dashboardData?.metrics || !Array.isArray(dashboardData.metrics)) {
       return [
         {
           id: "leads-contacted",
           title: "Total Leads Contacted",
           value: "0",
-          icon: "users",
+          icon: "Users",
           trend: "neutral",
           trendValue: "0%",
           color: "blue"
@@ -240,7 +243,7 @@ export const getDashboardMetrics = async () => {
           id: "meetings-booked", 
           title: "Meetings Booked",
           value: "0",
-          icon: "calendar",
+          icon: "Calendar",
           trend: "neutral",
           trendValue: "0%",
           color: "green"
@@ -249,7 +252,7 @@ export const getDashboardMetrics = async () => {
           id: "deals-closed",
           title: "Deals Closed", 
           value: "0",
-          icon: "trophy",
+          icon: "Trophy",
           trend: "neutral",
           trendValue: "0%",
           color: "purple"
@@ -258,7 +261,7 @@ export const getDashboardMetrics = async () => {
           id: "conversion-rate",
           title: "Conversion Rate",
           value: "0%",
-          icon: "trending-up",
+          icon: "TrendingUp",
           trend: "neutral", 
           trendValue: "0%",
           color: "orange"
