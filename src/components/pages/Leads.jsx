@@ -1425,12 +1425,12 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                         Next
                         <ApperIcon name="ChevronRight" size={16} />
                     </Button>
+</Button>
                 </div>
             </div>
         </div>
     );
 </div>}
-</Card>
     
     {/* Bulk Actions */}
     {selectedLeads.length > 0 && (
