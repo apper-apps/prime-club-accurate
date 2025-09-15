@@ -58,15 +58,49 @@ fields: [
     // Add date filtering if needed
     if (period !== 'all') {
       const { start, end } = getDateRange(period);
-      params.where = [
-        {
-          FieldName: "created_at_c",
-          Operator: "RelativeMatch",
-          Values: [period]
-        }
-      ];
+// Use proper date filtering based on period
+      if (period === 'today') {
+        const today = new Date();
+        const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+        params.where = [
+          {
+            FieldName: "created_at_c",
+            Operator: "ExactMatch",
+            SubOperator: "UtcDate",
+            Values: [todayISO + "T00:00:00Z"]
+          }
+        ];
+      } else if (period === 'yesterday') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayISO = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD format
+        params.where = [
+          {
+            FieldName: "created_at_c",
+            Operator: "ExactMatch",
+            SubOperator: "UtcDate", 
+            Values: [yesterdayISO + "T00:00:00Z"]
+          }
+        ];
+      } else if (period === 'week') {
+        params.where = [
+          {
+            FieldName: "created_at_c",
+            Operator: "RelativeMatch",
+            Values: ["this week"]
+          }
+        ];
+      } else if (period === 'month') {
+        params.where = [
+          {
+            FieldName: "created_at_c",
+            Operator: "RelativeMatch",
+            Values: ["this month"]
+          }
+}
+        ];
+      }
     }
-
     // Add user filtering if needed
     if (userId !== 'all') {
       if (!params.where) params.where = [];
