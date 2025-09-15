@@ -96,7 +96,6 @@ fields: [
             FieldName: "created_at_c",
             Operator: "RelativeMatch",
             Values: ["this month"]
-          }
 }
         ];
       }
