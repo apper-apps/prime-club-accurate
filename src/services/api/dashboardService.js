@@ -266,17 +266,8 @@ export const getDashboardMetrics = async () => {
           color: "orange"
         }
       ];
-    }
-    
-    return dashboardData.metrics.map(metric => ({
-      ...metric,
-      id: metric.id || Math.random(),
-      value: metric.value || '0',
-trend: metric.trend || 'neutral',
-      trendValue: metric.trendValue || '0%'
-    }));
-  }
-};
+}
+  };
 
 // Recent activity from static data
 export const getRecentActivity = async () => {
