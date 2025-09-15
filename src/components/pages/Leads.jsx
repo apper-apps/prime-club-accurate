@@ -3,6 +3,12 @@ import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { createLead, deleteLead, getLeads, updateLead } from "@/services/api/leadsService";
 import { createDeal, getDeals, updateDeal } from "@/services/api/dealsService";
+import salesRepsData from "@/services/mockData/salesReps.json";
+import contactsData from "@/services/mockData/contacts.json";
+import dealsData from "@/services/mockData/deals.json";
+import leadsData from "@/services/mockData/leads.json";
+import dashboardData from "@/services/mockData/dashboard.json";
+import teamsData from "@/services/mockData/teams.json";
 import ApperIcon from "@/components/ApperIcon";
 import Hotlist from "@/components/pages/Hotlist";
 import SearchBar from "@/components/molecules/SearchBar";
@@ -1422,10 +1428,9 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                         disabled={currentPage >= totalPages || loading}
                         className="flex items-center gap-1"
                     >
-                        Next
+Next
                         <ApperIcon name="ChevronRight" size={16} />
                     </Button>
-</Button>
                 </div>
             </div>
         </div>
