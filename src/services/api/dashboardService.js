@@ -221,7 +221,6 @@ export const getDashboardMetrics = async () => {
         trend: "up",
         trendValue: "+2.3%",
         color: "orange"
-color: "orange"
       }
     ];
 
@@ -273,7 +272,7 @@ color: "orange"
       ...metric,
       id: metric.id || Math.random(),
       value: metric.value || '0',
-      trend: metric.trend || 'neutral',
+trend: metric.trend || 'neutral',
       trendValue: metric.trendValue || '0%'
     }));
   }
