@@ -1434,7 +1434,7 @@ Next
                 </div>
 </div>
         </div>
-</div>}
+    )}
     
     {/* Bulk Actions */}
     {selectedLeads.length > 0 && (
