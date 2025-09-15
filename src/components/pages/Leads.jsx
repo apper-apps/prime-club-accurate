@@ -1432,9 +1432,8 @@ Next
                         <ApperIcon name="ChevronRight" size={16} />
                     </Button>
                 </div>
-            </div>
+</div>
         </div>
-    );
 </div>}
     
     {/* Bulk Actions */}
