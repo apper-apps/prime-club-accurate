@@ -1433,7 +1433,7 @@ Next
                     </Button>
                 </div>
             </div>
-        </div>
+</div>
     )}
     
     {/* Bulk Actions */}
