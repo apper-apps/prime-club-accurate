@@ -1,4 +1,4 @@
-export const getLeads = async () => {
+export const getLeads = async (paginationParams = {}) => {
   try {
     const { ApperClient } = window.ApperSDK;
     const apperClient = new ApperClient({
@@ -24,11 +24,132 @@ export const getLeads = async () => {
       ],
       orderBy: [
         {
-          fieldName: "created_at_c",
-          sorttype: "DESC"
+          fieldName: paginationParams.sort?.field 
+            ? (paginationParams.sort.field === 'productName' ? 'product_name_c' : 
+               paginationParams.sort.field === 'name' ? 'Name' :
+               paginationParams.sort.field === 'websiteUrl' ? 'website_url_c' :
+               paginationParams.sort.field === 'createdAt' ? 'created_at_c' :
+               'created_at_c')
+            : "created_at_c",
+          sorttype: paginationParams.sort?.order?.toUpperCase() || "DESC"
         }
-      ]
+      ],
+      pagingInfo: {
+        limit: paginationParams.limit || 20,
+        offset: ((paginationParams.page || 1) - 1) * (paginationParams.limit || 20)
+      }
     };
+
+    // Add search filters
+    if (paginationParams.search) {
+      params.whereGroups = [
+        {
+          operator: "OR",
+          subGroups: [
+            {
+              conditions: [
+                {
+                  fieldName: "product_name_c",
+                  operator: "Contains",
+                  values: [paginationParams.search]
+                }
+              ],
+              operator: "OR"
+            },
+            {
+              conditions: [
+                {
+                  fieldName: "Name",
+                  operator: "Contains",
+                  values: [paginationParams.search]
+                }
+              ],
+              operator: "OR"
+            },
+            {
+              conditions: [
+                {
+                  fieldName: "website_url_c",
+                  operator: "Contains",
+                  values: [paginationParams.search]
+                }
+              ],
+              operator: "OR"
+            },
+            {
+              conditions: [
+                {
+                  fieldName: "category_c",
+                  operator: "Contains",
+                  values: [paginationParams.search]
+                }
+              ],
+              operator: "OR"
+            }
+          ]
+        }
+      ];
+    }
+
+    // Add status filter
+    if (paginationParams.filters?.status) {
+      const statusWhere = {
+        FieldName: "status_c",
+        Operator: "EqualTo",
+        Values: [paginationParams.filters.status]
+      };
+      
+      if (params.where) {
+        params.where.push(statusWhere);
+      } else {
+        params.where = [statusWhere];
+      }
+    }
+
+    // Add funding filter
+    if (paginationParams.filters?.funding) {
+      const fundingWhere = {
+        FieldName: "funding_type_c",
+        Operator: "EqualTo",
+        Values: [paginationParams.filters.funding]
+      };
+      
+      if (params.where) {
+        params.where.push(fundingWhere);
+      } else {
+        params.where = [fundingWhere];
+      }
+    }
+
+    // Add category filter
+    if (paginationParams.filters?.category) {
+      const categoryWhere = {
+        FieldName: "category_c",
+        Operator: "EqualTo",
+        Values: [paginationParams.filters.category]
+      };
+      
+      if (params.where) {
+        params.where.push(categoryWhere);
+      } else {
+        params.where = [categoryWhere];
+      }
+    }
+
+    // Add team size filter
+    if (paginationParams.filters?.teamSize) {
+      const teamSizeWhere = {
+        FieldName: "team_size_c",
+        Operator: "EqualTo",
+        Values: [paginationParams.filters.teamSize]
+      };
+      
+      if (params.where) {
+        params.where.push(teamSizeWhere);
+      } else {
+        params.where = [teamSizeWhere];
+      }
+    }
 
     const response = await apperClient.fetchRecords('lead_c', params);
 
@@ -38,7 +159,7 @@ export const getLeads = async () => {
     }
 
     if (!response.data || response.data.length === 0) {
-      return { leads: [] };
+      return { leads: [], total: 0 };
     }
 
     const leads = response.data.map(lead => ({
@@ -60,7 +181,10 @@ export const getLeads = async () => {
       addedByName: lead.added_by_c?.Name || 'Unknown'
     }));
 
-    return { leads };
+    return { 
+      leads, 
+      total: response.total || leads.length 
+    };
   } catch (error) {
     console.error("Error fetching leads:", error?.response?.data?.message || error.message);
     throw error;

@@ -4,26 +4,26 @@ import { toast } from "react-toastify";
 import { createLead, deleteLead, getLeads, updateLead } from "@/services/api/leadsService";
 import { createDeal, getDeals, updateDeal } from "@/services/api/dealsService";
 import ApperIcon from "@/components/ApperIcon";
+import Hotlist from "@/components/pages/Hotlist";
 import SearchBar from "@/components/molecules/SearchBar";
-import Error from "@/components/ui/Error";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Card from "@/components/atoms/Card";
+import Badge from "@/components/atoms/Badge";
 import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
-import Hotlist from "@/components/pages/Hotlist";
-import Input from "@/components/atoms/Input";
-import Badge from "@/components/atoms/Badge";
-import Button from "@/components/atoms/Button";
-import Card from "@/components/atoms/Card";
+import Error from "@/components/ui/Error";
 
 const Leads = () => {
-  const [data, setData] = useState([]);
+const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [fundingFilter, setFundingFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [teamSizeFilter, setTeamSizeFilter] = useState("all");
-const [sortBy, setSortBy] = useState("productName");
+  const [sortBy, setSortBy] = useState("productName");
   const [sortOrder, setSortOrder] = useState("desc");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
@@ -31,12 +31,23 @@ const [sortBy, setSortBy] = useState("productName");
   const [nextTempId, setNextTempId] = useState(-1);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-const [topScrollbarRef, setTopScrollbarRef] = useState(null);
+  const [topScrollbarRef, setTopScrollbarRef] = useState(null);
   const [tableScrollbarRef, setTableScrollbarRef] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+useEffect(() => {
+    loadLeads();
+  }, [currentPage, itemsPerPage]);
 
   useEffect(() => {
-    loadLeads();
-  }, []);
+    // Reset to first page when filters change
+    if (currentPage > 1) {
+      setCurrentPage(1);
+    } else {
+      loadLeads();
+    }
+  }, [searchTerm, statusFilter, fundingFilter, categoryFilter, teamSizeFilter, sortBy, sortOrder]);
 
   // Synchronize scrolling between top and bottom scrollbars
   useEffect(() => {
@@ -63,11 +74,29 @@ const loadLeads = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getLeads();
+      
+      const paginationParams = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        filters: {
+          status: statusFilter !== "all" ? statusFilter : null,
+          funding: fundingFilter !== "all" ? fundingFilter : null,
+          category: categoryFilter !== "all" ? categoryFilter : null,
+          teamSize: teamSizeFilter !== "all" ? teamSizeFilter : null
+        },
+        sort: {
+          field: sortBy,
+          order: sortOrder
+        }
+      };
+      
+      const response = await getLeads(paginationParams);
       
       // Handle both old format (direct array) and new format (object with leads and deduplication info)
       if (response.leads) {
         setData(response.leads);
+        setTotalItems(response.total || response.leads.length);
         
         // Show deduplication result if duplicates were removed
         if (response.deduplicationResult) {
@@ -80,6 +109,7 @@ const loadLeads = async () => {
       } else {
         // Fallback for old format
         setData(response);
+        setTotalItems(response.length || 0);
       }
     } catch (err) {
       setError(err.message);
@@ -244,11 +274,11 @@ const handleUpdateLead = async (leadId, updates) => {
     });
   };
 
-  const toggleSelectAll = () => {
-    if (selectedLeads.length === filteredAndSortedData.length) {
+const toggleSelectAll = () => {
+    if (selectedLeads.length === data.length) {
       setSelectedLeads([]);
     } else {
-      setSelectedLeads(filteredAndSortedData.map(lead => lead.Id));
+      setSelectedLeads(data.map(lead => lead.Id));
     }
   };
 
@@ -617,47 +647,24 @@ const getStatusColor = (status) => {
     return colors[status] || "default";
   };
 
-const filteredAndSortedData = data
-.filter(lead => {
-      const matchesSearch = !searchTerm || 
-        lead.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.websiteUrl.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.teamSize.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
-      const matchesFunding = fundingFilter === "all" || lead.fundingType === fundingFilter;
-      const matchesCategory = categoryFilter === "all" || lead.category === categoryFilter;
-      const matchesTeamSize = teamSizeFilter === "all" || lead.teamSize === teamSizeFilter;
-      
-      return matchesSearch && matchesStatus && matchesFunding && matchesCategory && matchesTeamSize;
-    })
-.sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
-      
-      if (sortBy === "arr") {
-        aValue = Number(aValue);
-        bValue = Number(bValue);
-      }
-      
-      if (sortBy === "createdAt") {
-        aValue = new Date(aValue);
-        bValue = new Date(bValue);
-      }
-      
-      if (sortBy === "websiteUrl") {
-        // Sort websiteUrl by creation date (newest first) instead of alphabetical
-        aValue = new Date(a.createdAt);
-        bValue = new Date(b.createdAt);
-      }
-      
-      if (sortOrder === "asc") {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+// Since data is now pre-filtered and sorted on the server, we use it directly
+  const filteredAndSortedData = data;
+  
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+  
+  const handleItemsPerPageChange = (newItemsPerPage) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
 
 const handleSort = (field) => {
     if (sortBy === field) {
@@ -1069,7 +1076,7 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                     onChange={() => toggleLeadSelection(lead.Id)}
                                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                 />
-</td>
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                                 <Input
                                     type="text"
@@ -1160,13 +1167,13 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                     onKeyDown={e => {
                                         if (e.key === "Enter") {
                                             handleFieldUpdate(lead.Id, "arr", e.target.value);
-}
+                                        }
                                     }}
                                     className="border-0 bg-transparent p-1 hover:bg-gray-50 focus:bg-white focus:border-gray-300 w-full" />
                             </td>
                             <td
                                 className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 min-w-[150px]">
-<SearchableSelect
+                                <SearchableSelect
                                     value={lead.category}
                                     onChange={(value) => handleFieldUpdate(lead.Id, "category", value)}
                                     options={categoryOptions}
@@ -1174,7 +1181,7 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                     onCreateCategory={handleCreateCategory}
                                 />
                             </td>
-<td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
+                            <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                                 <div className="flex items-center gap-2">
                                     <Input
                                         type="url"
@@ -1222,7 +1229,7 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                     </select>
                                 </div>
                             </td>
-<td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                            <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
                                 <div className="relative">
                                     <Badge
                                         variant={lead.edition === "Black Edition" ? "primary" : "default"}
@@ -1253,7 +1260,7 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                         className="absolute inset-0 opacity-0 cursor-pointer w-full">
                                         {fundingTypeOptions.map(option => <option key={option} value={option}>{option}</option>)}
                                     </select>
-</div>
+                                </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap min-w-[130px]">
                                 <Input
@@ -1306,6 +1313,122 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                     </tbody>
                 </table>
             </div>
+
+            {/* Pagination Controls */}
+            <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-700">
+                        Showing {totalItems > 0 ? startItem : 0} to {endItem} of {totalItems} results
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">Items per page:</span>
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                            className="border border-gray-300 rounded px-2 py-1 text-sm"
+                        >
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1 || loading}
+                        className="flex items-center gap-1"
+                    >
+                        <ApperIcon name="ChevronLeft" size={16} />
+                        Previous
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                        {/* Show page numbers */}
+                        {(() => {
+                            const maxVisiblePages = 5;
+                            const halfVisible = Math.floor(maxVisiblePages / 2);
+                            let startPage = Math.max(1, currentPage - halfVisible);
+                            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                            
+                            if (endPage - startPage < maxVisiblePages - 1) {
+                                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                            }
+                            
+                            const pages = [];
+                            
+                            if (startPage > 1) {
+                                pages.push(
+                                    <button
+                                        key={1}
+                                        onClick={() => handlePageChange(1)}
+                                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        1
+                                    </button>
+                                );
+                                if (startPage > 2) {
+                                    pages.push(
+                                        <span key="ellipsis1" className="px-2 text-gray-400">...</span>
+                                    );
+                                }
+                            }
+                            
+                            for (let i = startPage; i <= endPage; i++) {
+                                pages.push(
+                                    <button
+                                        key={i}
+                                        onClick={() => handlePageChange(i)}
+                                        className={`px-3 py-1 text-sm border rounded ${
+                                            i === currentPage
+                                                ? 'bg-primary-600 text-white border-primary-600'
+                                                : 'border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        {i}
+                                    </button>
+                                );
+                            }
+                            
+                            if (endPage < totalPages) {
+                                if (endPage < totalPages - 1) {
+                                    pages.push(
+                                        <span key="ellipsis2" className="px-2 text-gray-400">...</span>
+                                    );
+                                }
+                                pages.push(
+                                    <button
+                                        key={totalPages}
+                                        onClick={() => handlePageChange(totalPages)}
+                                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                                    >
+                                        {totalPages}
+                                    </button>
+                                );
+                            }
+                            
+                            return pages;
+                        })()}
+                    </div>
+                    
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages || loading}
+                        className="flex items-center gap-1"
+                    >
+                        Next
+                        <ApperIcon name="ChevronRight" size={16} />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
 </div>}
 </Card>
     
