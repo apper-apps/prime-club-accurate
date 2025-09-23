@@ -1428,17 +1428,16 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage >= totalPages || loading}
                         className="flex items-center gap-1"
-                    >
-Next
+>
+                        Next
                         <ApperIcon name="ChevronRight" size={16} />
                     </Button>
+                </div>
 </div>
-</Button>
                 </div>
             </div>
-        </Card>
-        </>
-    )}
+        </>}
+    </Card>
     
     {/* Bulk Actions */}
     {selectedLeads.length > 0 && (
