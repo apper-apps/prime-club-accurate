@@ -980,9 +980,9 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
                                         placeholder="Select category..."
                                         className="text-gray-500"
                                         onCreateCategory={handleCreateCategory}
-                                    />
+/>
                                 </td>
-<td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
+                                <td className="px-6 py-4 whitespace-nowrap min-w-[200px]">
                                     <Input
                                         type="url"
                                         value={emptyRow.linkedinUrl}
