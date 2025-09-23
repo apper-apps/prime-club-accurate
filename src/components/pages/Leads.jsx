@@ -1,24 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import { createLead, deleteLead, getLeads, updateLead } from "@/services/api/leadsService";
-import { createDeal, getDeals, updateDeal } from "@/services/api/dealsService";
-import salesRepsData from "@/services/mockData/salesReps.json";
-import contactsData from "@/services/mockData/contacts.json";
-import dealsData from "@/services/mockData/deals.json";
-import leadsData from "@/services/mockData/leads.json";
-import dashboardData from "@/services/mockData/dashboard.json";
-import teamsData from "@/services/mockData/teams.json";
 import ApperIcon from "@/components/ApperIcon";
-import Hotlist from "@/components/pages/Hotlist";
 import SearchBar from "@/components/molecules/SearchBar";
-import Button from "@/components/atoms/Button";
-import Input from "@/components/atoms/Input";
-import Card from "@/components/atoms/Card";
-import Badge from "@/components/atoms/Badge";
+import Hotlist from "@/components/pages/Hotlist";
+import Error from "@/components/ui/Error";
 import Empty from "@/components/ui/Empty";
 import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
+import Input from "@/components/atoms/Input";
+import Button from "@/components/atoms/Button";
+import Card from "@/components/atoms/Card";
+import Badge from "@/components/atoms/Badge";
+import contactsData from "@/services/mockData/contacts.json";
+import dealsData from "@/services/mockData/deals.json";
+import teamsData from "@/services/mockData/teams.json";
+import leadsData from "@/services/mockData/leads.json";
+import salesRepsData from "@/services/mockData/salesReps.json";
+import dashboardData from "@/services/mockData/dashboard.json";
+import { createLead, deleteLead, getLeads, updateLead } from "@/services/api/leadsService";
+import { createDeal, getDeals, updateDeal } from "@/services/api/dealsService";
 
 const Leads = () => {
 const [data, setData] = useState([]);
@@ -781,7 +781,7 @@ const handleSort = (field) => {
                 </select>
             </div>
         </div>
-    </Card>
+</Card>
     {/* Leads Table */}
     <Card className="overflow-hidden">
         {filteredAndSortedData.length === 0 ? <Empty
@@ -789,7 +789,8 @@ const handleSort = (field) => {
             description="Add your first lead to get started with lead management"
             actionText="Add Lead"
             onAction={() => setShowAddForm(true)}
-icon="Building2" /> : <div className="relative">
+            icon="Building2" /> : <>
+            <div className="relative">
             {/* Top scrollbar for easier horizontal navigation */}
             <div 
               ref={setTopScrollbarRef}
@@ -1431,9 +1432,11 @@ emptyRow => <tr key={`empty-${emptyRow.Id}`} className="hover:bg-gray-50 empty-r
 Next
                         <ApperIcon name="ChevronRight" size={16} />
                     </Button>
-                </div>
-            </div>
 </div>
+</div>
+        </div>
+    </Card>
+    </>
     )}
     
     {/* Bulk Actions */}
